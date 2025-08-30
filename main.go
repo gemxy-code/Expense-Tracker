@@ -21,9 +21,44 @@ func main() {
 		Summary()
 	case "list":
 		PresentTasks()
+	case "update":
+		UpdateTask()
 	default:
 		fmt.Println("none")
 	}
+}
+
+func UpdateTask() {
+	updateCmd := flag.NewFlagSet("update", flag.ExitOnError)
+
+	id := updateCmd.Int("id", -1, "id task")
+	description := updateCmd.String("description", "-", "Description for expense")
+	amount := updateCmd.Int("amount", 0, "Amount expense")
+	category := updateCmd.Int("category", 0, "Categories: \n Undefine Category - 0\n Home - 1\n Food - 2\n	Clothes - 3\n Hobby - 4\n Healths - 5\n")
+
+	updateCmd.Parse(os.Args[2:])
+
+	if *id == -1 {
+		fmt.Println("Введите пожалуйста id")
+		return
+	}
+
+	updateExpense := data.Expense{
+		Id: *id,
+		Date: data.DateStruct{
+			Day:   time.Now().Day(),
+			Month: int(time.Now().Month()),
+			Year:  time.Now().Year(),
+		},
+		Category:    data.Category(*category),
+		Description: *description,
+		Amount:      *amount,
+	}
+
+	er.UpdateById(updateExpense)
+
+	fmt.Printf("Expense updated successfully (ID: %d)\n", *id)
+
 }
 
 func Summary() {
@@ -64,6 +99,7 @@ func AddTask() {
 
 	description := addCmd.String("description", "-", "Description for expense")
 	amount := addCmd.Int("amount", 0, "Amount expense")
+	category := addCmd.Int("category", 0, "Categories: \n Undefine Category - 0\n Home - 1\n Food - 2\n Clothes - 3\n Hobby - 4\n Healths - 5")
 
 	addCmd.Parse(os.Args[2:])
 
@@ -76,6 +112,7 @@ func AddTask() {
 			Month: int(time.Now().Month()),
 			Year:  time.Now().Year(),
 		},
+		Category:    data.Category(*category),
 		Description: *description,
 		Amount:      *amount,
 	}
@@ -92,12 +129,7 @@ func DeleteTask() {
 
 	deleteCmd.Parse(os.Args[2:])
 
-	err := er.DeleteById(*taskId)
-
-	if err != nil {
-		fmt.Printf("DeleteTask delete by Id error: %s\n", err.Error())
-		return
-	}
+	er.DeleteById(*taskId)
 
 	fmt.Println("Expense deleted successfully")
 }

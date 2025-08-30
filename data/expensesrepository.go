@@ -62,30 +62,55 @@ func (er ExpensesRepository) PresentTasks(date DateStruct) {
 	table := uitable.New()
 	table.MaxColWidth = 50
 
-	table.AddRow("ID", "Date ", "Description", "Amount")
+	table.AddRow("ID", "Date ", "Description", "Amount", "Category")
 	for _, val := range filteredTasks {
-		table.AddRow(val.Id, val.Date, val.Description, val.Amount)
+		table.AddRow(val.Id, val.Date, val.Description, val.Amount, val.Category.ToString())
 	}
 	fmt.Println(table)
 }
 
-func (er *ExpensesRepository) DeleteById(taskId int) error {
-
+func (er *ExpensesRepository) findIndexTaskById(taskId int) (int, error) {
 	for index, val := range er.AllExpenses {
 		if val.Id == taskId {
-			if index == len(er.AllExpenses)-1 {
-				er.AllExpenses = er.AllExpenses[:index]
-			} else if index == 0 {
-				er.AllExpenses = er.AllExpenses[index+1:]
-			} else {
-				er.AllExpenses = append(er.AllExpenses[:index], er.AllExpenses[index+1:]...)
-			}
-			er.saveExpenses()
-			return nil
+			return index, nil
 		}
 	}
 
-	return errors.New("отсутствует задача с таким ID :(")
+	return 0, errors.New("отсутствует задача с таким ID :(")
+}
+
+func (er *ExpensesRepository) UpdateById(updateExpense Expense) {
+	index, err := er.findIndexTaskById(updateExpense.Id)
+
+	if err != nil {
+
+		fmt.Printf("UpdateById: find task by id error: %s\n", err.Error())
+		return
+	}
+
+	er.AllExpenses[index].Description = updateExpense.Description
+	er.AllExpenses[index].Amount = updateExpense.Amount
+
+	er.saveExpenses()
+}
+
+func (er *ExpensesRepository) DeleteById(taskId int) {
+	index, err := er.findIndexTaskById(taskId)
+
+	if err != nil {
+
+		fmt.Printf("DeleteById: find task by id error: %s\n", err.Error())
+		return
+	}
+
+	if index == len(er.AllExpenses)-1 {
+		er.AllExpenses = er.AllExpenses[:index]
+	} else if index == 0 {
+		er.AllExpenses = er.AllExpenses[index+1:]
+	} else {
+		er.AllExpenses = append(er.AllExpenses[:index], er.AllExpenses[index+1:]...)
+	}
+	er.saveExpenses()
 
 }
 
@@ -97,7 +122,7 @@ func (er *ExpensesRepository) AddNewExpense(newExpense Expense) {
 func (er *ExpensesRepository) LoadExpenses() {
 	buf, err := os.ReadFile("temp/expenses.json")
 	if err != nil && err != io.EOF {
-		fmt.Printf("LoadExpenses read file error: %s\n", err.Error())
+		fmt.Printf("LoadExpenses: read file error: %s\n", err.Error())
 		return
 	}
 
@@ -108,7 +133,7 @@ func (er *ExpensesRepository) LoadExpenses() {
 
 	err = json.Unmarshal(buf, &er.AllExpenses)
 	if err != nil {
-		fmt.Printf("LoadExpenses unmarshal json error: %s\n", err.Error())
+		fmt.Printf("LoadExpenses: unmarshal json error: %s\n", err.Error())
 		return
 	}
 }
@@ -124,21 +149,21 @@ func (er ExpensesRepository) GetLastId() int {
 func (er ExpensesRepository) saveExpenses() {
 	b, err := json.Marshal(er.AllExpenses)
 	if err != nil {
-		fmt.Printf("SaveExpenses marshal json error: %s\n", err.Error())
+		fmt.Printf("SaveExpenses: marshal json error: %s\n", err.Error())
 		return
 	}
 
 	file, err := os.OpenFile("temp/expenses.json", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 
 	if err != nil {
-		fmt.Printf("SaveExpenses open file error: %s\n", err.Error())
+		fmt.Printf("SaveExpenses: open file error: %s\n", err.Error())
 		return
 	}
 	defer file.Close()
 
 	_, err = file.Write(b)
 	if err != nil {
-		fmt.Printf("SaveExpenses write in file error: %s\n", err.Error())
+		fmt.Printf("SaveExpenses: write in file error: %s\n", err.Error())
 		return
 	}
 }
